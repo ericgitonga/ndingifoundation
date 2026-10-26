@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.7 — 2026-10-26
+
+Production cutover to `ndingifoundation.org`, frontend & `wp-admin` parity sync, and contact form Zoho SMTP delivery fix (#3, #4, #5, #6, #7):
+- **Database cutover (#4)**: Resolved HTTP 500 database connection failure on `ndingifoundation.org` caused by `wp-config.php` referencing `ndingi.ericgitonga.com`'s internal MySQL host (`angry-sd-1` / `egimba_ndingi`), cutting over to `localhost` (`dukkapu1_ndingi1`).
+- **Pretty permalink routing (#5)**: Deployed standard WordPress `mod_rewrite` rules to `/public_html/.htaccess` on `ndingifoundation.org` (and tracked `.htaccess.example` in the repo), fixing HTTP 404 errors across all nested routes (`/about/`, `/our-work/`, `/partners/`, `/resources/`, `/donate/`, `/contact/`).
+- **Contact form recipient fix (#6)**: Updated `ndingi_handle_contact_submission()` in `wp-content/plugins/ndingi-wp-content/includes/contact-form-handler.php` to send to `ndingi_contact_email()` (`admin@ndingifoundation.org`) instead of `get_option('admin_email')` (which was still set to `gitonga@gmail.com`), and updated `wp_options.admin_email` on production so Zoho FluentSMTP (`smtp.zoho.com:465`) delivers to `admin@ndingifoundation.org`.
+- **Full `wp-admin` editable content & editor preference parity (#7)**: Synced `wp_persisted_preferences` (`metaBoxesMainIsOpen: true`, `welcomeGuide: false`) for both admin users on `ndingifoundation.org`, copied all 19 `ndingi_*` post meta entries on `Home` (`post=53`), synced block editor content on `Who We Are` (`55`), `Mission` (`56`), `Education` (`61`), and `Today here` (`116`), seeded the 5 `partner` CPT entries via `ndingi_page_setup_run()`, and synced the `Longonot` draft post plus all 35 Media Library attachment records.
+
 ## 0.4.6 — 2026-10-08
 
 Sync live site download, update `.gitignore` for WordPress core, and make `seed.php` docroot-safe (#2):
