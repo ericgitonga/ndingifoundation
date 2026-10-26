@@ -37,7 +37,10 @@ function ndingi_handle_contact_submission() {
 		exit;
 	}
 
-	$to        = get_option( 'admin_email' );
+	$to           = function_exists( 'ndingi_contact_email' ) ? ndingi_contact_email() : '';
+	if ( ! $to || ! is_email( $to ) ) {
+		$to = get_option( 'admin_email' );
+	}
 	$mail_subject = sprintf( '[Contact form] %s', $subject ?: 'New message from ' . $name );
 	$body      = "Name: {$name}\nEmail: {$email}\n\n{$message}";
 	$headers   = array( 'Reply-To: ' . $name . ' <' . $email . '>' );
