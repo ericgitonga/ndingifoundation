@@ -1,0 +1,39 @@
+# Local WordPress core + SQLite runtime used only for previewing the theme/
+# plugin on a machine with no MySQL/Docker — WordPress core itself is never
+# part of this repo's deliverable (the theme + plugin are).
+.wp-runtime/
+
+# WordPress core files in repo root
+/index.php
+/license.txt
+/readme.html
+/wp-activate.php
+/wp-admin/
+/wp-blog-header.php
+/wp-comments-post.php
+/wp-config.php
+/wp-cron.php
+/wp-includes/
+/wp-links-opml.php
+/wp-load.php
+/wp-login.php
+/wp-mail.php
+/wp-settings.php
+/wp-signup.php
+/wp-trackback.php
+/xmlrpc.php
+
+# WordPress runtime & default content
+/wp-content/ai1wm-backups/
+/wp-content/index.php
+/wp-content/languages/
+/wp-content/plugins/index.php
+/wp-content/themes/index.php
+/wp-content/themes/twenty*/
+/wp-content/upgrade/
+/wp-content/uploads/
+
+# OS/editor cruft
+.DS_Store
+*.swp
+
