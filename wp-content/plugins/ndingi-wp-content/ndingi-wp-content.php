@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Ndingi Foundation Content Model
  * Description: Custom post types, taxonomies, and meta fields for the Ndingi Foundation site — kept in a plugin rather than the theme so the content model survives a theme change.
- * Version: 0.4.8
+ * Version: 0.4.9
  * Author: Ndingi Foundation
  * License: UNLICENSED
  * Text Domain: ndingi-wp-content
