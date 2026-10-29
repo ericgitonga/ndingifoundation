@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.9 — 2026-10-29
+
+Add recovered Archbishop Ndingi portraits to **Who We Are** and standardize Trustee & Board of Management titles/names (#10, #11):
+- **Archbishop Ndingi portraits on Who We Are (#10)**: Bundled the two portraits recovered from the legacy site (`archbishop-ndingi-portrait.jpg` and `archbishop-ndingi-star.png`), added responsive `.founder-gallery` styling in `assets/css/main.css`, and updated `includes/page-setup.php` and `local-preview/seed.php` (plus live `ndingifoundation.org` Media Library & **Who We Are** page content) to display both portraits in the *Archbishop Raphael Simon Ndingi Mwana’a Nzeki* section.
+- **Trustee & Board of Management naming & title updates (#11)**: Updated **Bishop Dominic Kimengich** to **Archbishop Dominic Kimengich** on the Trustees roster, standardized **Mr. James Nyiha** to **James Nyiha** across Trustees and Board of Management, and ensured **Fr. Antony Mwituria** remains exclusively on the Board of Management roster (both on live `ndingifoundation.org` and idempotently in `ndingi_page_setup_run()`).
+- Bumped `VERSION`, theme `style.css`, and plugin `ndingi-wp-content.php` headers to `0.4.9`.
+
 ## 0.4.8 — 2026-10-27
 
 Deactivate and remove the one-time **Tools → Ndingi People Import** utility now that `ndingifoundation.org` is live on WordPress (#9):

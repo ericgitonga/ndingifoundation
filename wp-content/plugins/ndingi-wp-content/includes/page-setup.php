@@ -60,6 +60,66 @@ function ndingi_page_setup_create_page( $title, $content, $parent_id = 0, $templ
 }
 
 /**
+ * Ensure an image bundled in the theme is registered in the Media Library
+ * (matched by title so re-running never creates duplicates) and return its
+ * public URL (falling back to the theme asset URI if upload fails).
+ */
+function ndingi_page_setup_ensure_media( $rel_theme_path, $title, $parent_id = 0 ) {
+	$existing = ndingi_page_setup_find_by_title( $title, 'attachment' );
+	if ( $existing ) {
+		$url = wp_get_attachment_url( $existing->ID );
+		if ( $url ) {
+			return $url;
+		}
+	}
+
+	$file_path = get_template_directory() . $rel_theme_path;
+	if ( ! file_exists( $file_path ) ) {
+		return get_template_directory_uri() . $rel_theme_path;
+	}
+
+	$filetype = wp_check_filetype( basename( $file_path ) );
+	$upload   = wp_upload_bits( basename( $file_path ), null, file_get_contents( $file_path ) );
+	if ( ! empty( $upload['error'] ) ) {
+		return get_template_directory_uri() . $rel_theme_path;
+	}
+
+	$attachment_id = wp_insert_attachment(
+		array(
+			'post_mime_type' => $filetype['type'],
+			'post_title'     => $title,
+			'post_status'    => 'inherit',
+		),
+		$upload['file'],
+		$parent_id
+	);
+	if ( $attachment_id && ! is_wp_error( $attachment_id ) ) {
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		wp_update_attachment_metadata( $attachment_id, wp_generate_attachment_metadata( $attachment_id, $upload['file'] ) );
+		$url = wp_get_attachment_url( $attachment_id );
+		if ( $url ) {
+			return $url;
+		}
+	}
+
+	return get_template_directory_uri() . $rel_theme_path;
+}
+
+/**
+ * Build the HTML gallery block for Archbishop Ndingi's portraits on Who We Are.
+ */
+function ndingi_page_setup_founder_gallery_html( $parent_id = 0 ) {
+	$portrait_1 = esc_url( ndingi_page_setup_ensure_media( '/assets/images/archbishop-ndingi-portrait.jpg', "Archbishop Raphael Simon Ndingi Mwana'a Nzeki — Seated Portrait", $parent_id ) );
+	$portrait_2 = esc_url( ndingi_page_setup_ensure_media( '/assets/images/archbishop-ndingi-star.png', "Archbishop Raphael Simon Ndingi Mwana'a Nzeki — Portrait", $parent_id ) );
+
+	return sprintf(
+		"<div class=\"founder-gallery\">\n<figure><img src=\"%s\" alt=\"Archbishop Raphael Simon Ndingi Mwana\u{2019}a Nzeki\" /><figcaption>Archbishop Raphael Simon Ndingi Mwana\u{2019}a Nzeki</figcaption></figure>\n<figure><img src=\"%s\" alt=\"Archbishop Raphael Simon Ndingi Mwana\u{2019}a Nzeki\" /><figcaption>Archbishop Ndingi Mwana\u{2019}a Nzeki (1931\u{2013}2020)</figcaption></figure>\n</div>",
+		$portrait_1,
+		$portrait_2
+	);
+}
+
+/**
  * Creates every page ndingi-wp expects (or leaves it alone if already
  * present, matched by title) plus the five real Core Values entries.
  * Deliberately excludes local-preview/seed.php's placeholder team
@@ -98,7 +158,8 @@ function ndingi_page_setup_run() {
 	list( $about_id, $c ) = ndingi_page_setup_create_page( 'About', '', 0, 'page-about.php' );
 	$note( 'About', $c );
 
-	$who_we_are_content = "<p>The Archbishop Ndingi Mwana\u{2019}a Nzeki Foundation is dedicated to transforming lives across Kenya through education, sustainable community development, and climate-resilient water and ecosystem management.</p>\n<p>Inspired by the legacy of Archbishop Raphael Simon Ndingi Mwana\u{2019}a Nzeki, we work with communities and partners to create opportunities that improve livelihoods, strengthen resilience, and promote inclusive and sustainable development. Our work is delivered through three strategic programme areas and is made possible through the support of individuals, organisations, foundations, and development partners who share our vision of lasting positive impact.</p>\n<h2>Archbishop Raphael Simon Ndingi Mwana\u{2019}a Nzeki</h2>\n<p>Archbishop Raphael Simon Ndingi Mwana\u{2019}a Nzeki was born in Mwala, Machakos County, and ordained a priest on 31 January 1961. He served as National Education Secretary of the Kenya Episcopal Conference before becoming the first Bishop of Machakos (1969\u{2013}71), then Bishop of Nakuru for 25 years.</p>\n<p>He was appointed Coadjutor Archbishop of Nairobi in 1996, and served as Archbishop of Nairobi from 1997 to 2007. His lifelong commitment to education, community development, and stewardship of natural resources continues to guide the Foundation\u{2019}s mission today.</p>";
+	$founder_gallery = ndingi_page_setup_founder_gallery_html();
+	$who_we_are_content = "<p>The Archbishop Ndingi Mwana\u{2019}a Nzeki Foundation is dedicated to transforming lives across Kenya through education, sustainable community development, and climate-resilient water and ecosystem management.</p>\n<p>Inspired by the legacy of Archbishop Raphael Simon Ndingi Mwana\u{2019}a Nzeki, we work with communities and partners to create opportunities that improve livelihoods, strengthen resilience, and promote inclusive and sustainable development. Our work is delivered through three strategic programme areas and is made possible through the support of individuals, organisations, foundations, and development partners who share our vision of lasting positive impact.</p>\n<h2>Archbishop Raphael Simon Ndingi Mwana\u{2019}a Nzeki</h2>\n{$founder_gallery}\n<p>Archbishop Raphael Simon Ndingi Mwana\u{2019}a Nzeki was born in Mwala, Machakos County, and ordained a priest on 31 January 1961. He served as National Education Secretary of the Kenya Episcopal Conference before becoming the first Bishop of Machakos (1969\u{2013}71), then Bishop of Nakuru for 25 years.</p>\n<p>He was appointed Coadjutor Archbishop of Nairobi in 1996, and served as Archbishop of Nairobi from 1997 to 2007. His lifelong commitment to education, community development, and stewardship of natural resources continues to guide the Foundation\u{2019}s mission today.</p>";
 	list( $who_we_are_id, $c ) = ndingi_page_setup_create_page(
 		'Who We Are',
 		$who_we_are_content,
@@ -106,6 +167,27 @@ function ndingi_page_setup_run() {
 		'page-who-we-are.php',
 		array( 'ndingi_card_icon' => 'who-we-are', 'ndingi_card_blurb' => "Our mission, our story, and Archbishop Ndingi's enduring legacy." )
 	);
+	if ( ! $c && $who_we_are_id ) {
+		$existing_wwa = get_post( $who_we_are_id );
+		if ( $existing_wwa && false === strpos( $existing_wwa->post_content, 'founder-gallery' ) && false === strpos( $existing_wwa->post_content, '<img' ) ) {
+			$updated_wwa = preg_replace(
+				'/(<h[23][^>]*>Archbishop Raphael Simon Ndingi[^<]*<\/h[23]>)/u',
+				"$1\n" . $founder_gallery,
+				$existing_wwa->post_content,
+				1,
+				$replaced
+			);
+			if ( ! $replaced ) {
+				$updated_wwa = $existing_wwa->post_content . "\n" . $founder_gallery;
+			}
+			wp_update_post(
+				array(
+					'ID'           => $who_we_are_id,
+					'post_content' => $updated_wwa,
+				)
+			);
+		}
+	}
 	$note( 'Who We Are', $c );
 
 	list( , $c ) = ndingi_page_setup_create_page(
@@ -309,6 +391,32 @@ function ndingi_page_setup_run() {
 			wp_set_object_terms( $adv_id, $adv['category'], 'partner_category' );
 			$created[] = "Partner: {$adv['name']}";
 		}
+	}
+
+	// Normalize Trustee & Board of Management titles/names per client feedback (2026-10-29):
+	// 1. "Bishop Dominic Kimengich" -> "Archbishop Dominic Kimengich"
+	// 2. "Mr. James Nyiha" -> "James Nyiha"
+	// 3. Keep "Fr. Antony Mwituria" exclusively on the Board of Management ('board') roster.
+	$member_renames = array(
+		'Bishop Dominic Kimengich' => 'Archbishop Dominic Kimengich',
+		'Mr. James Nyiha'          => 'James Nyiha',
+	);
+	foreach ( $member_renames as $old_name => $new_name ) {
+		$member_post = ndingi_page_setup_find_by_title( $old_name, 'team_member' );
+		if ( $member_post ) {
+			wp_update_post(
+				array(
+					'ID'         => $member_post->ID,
+					'post_title' => $new_name,
+					'post_name'  => sanitize_title( $new_name ),
+				)
+			);
+		}
+	}
+
+	$fr_antony = ndingi_page_setup_find_by_title( 'Fr. Antony Mwituria', 'team_member' );
+	if ( $fr_antony ) {
+		wp_set_object_terms( $fr_antony->ID, array( 'board' ), 'ndingi_roster', false );
 	}
 
 	return array(

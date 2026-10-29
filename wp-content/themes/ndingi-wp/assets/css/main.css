@@ -116,6 +116,44 @@ dd {
 	margin: 0;
 }
 
+.founder-gallery {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 1.25rem;
+	margin: 0.75rem 0;
+}
+
+@media (min-width: 640px) {
+	.founder-gallery {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+.founder-gallery figure {
+	margin: 0;
+	border-radius: 0.5rem;
+	border: 1px solid var(--border-soft);
+	background: var(--tint-30);
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+
+.founder-gallery img {
+	width: 100%;
+	height: 16rem;
+	object-fit: cover;
+	object-position: top center;
+	display: block;
+}
+
+.founder-gallery figcaption {
+	padding: 0.625rem 0.875rem;
+	font-size: 0.8125rem;
+	color: var(--fg-70);
+	text-align: center;
+}
+
 .lede {
 	margin-top: 1.5rem;
 	font-size: 1.125rem;
