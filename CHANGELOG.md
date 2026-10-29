@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.8 — 2026-10-27
+
+Deactivate and remove the one-time **Tools → Ndingi People Import** utility now that `ndingifoundation.org` is live on WordPress (#9):
+- Removed `includes/people-import.php` and `local-preview/import-real-people.php` (and its `require_once` in `ndingi-wp-content.php`) so existing `Team Members` entries can never be overwritten from the legacy Sanity dataset.
+- Bumped `VERSION`, theme `style.css`, and plugin `ndingi-wp-content.php` headers to `0.4.8`.
+
 ## 0.4.7 — 2026-10-26
 
 Production cutover to `ndingifoundation.org`, frontend & `wp-admin` parity sync, and contact form Zoho SMTP delivery fix (#3, #4, #5, #6, #7):
