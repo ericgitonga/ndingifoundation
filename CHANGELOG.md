@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.10 — 2026-10-30
+
+Harden contact form against automated spam bots and protect Zoho SMTP sender reputation (#14):
+- **7-layer defense-in-depth contact form protection (#14)**:
+  1. **Multi-field disguised honeypots**: Added off-screen `.contact-form__aux` text trap (`name="website"`, `autocomplete="nope"`) alongside `botcheck` in `wp-content/themes/ndingi-wp/template-parts/contact-form.php` and `assets/css/main.css`.
+  2. **Signed timestamp time-trap & single-use replay lock**: Added `ndingi_ts`, `ndingi_seed`, and HMAC-SHA256 `ndingi_sig` verification in `wp-content/plugins/ndingi-wp-content/includes/contact-form-handler.php`, enforcing a 4-second minimum fill time, 2-hour maximum token lifetime, and transient-backed single-use signature replay prevention.
+  3. **Client-side human interaction proof token**: Updated `wp-content/themes/ndingi-wp/assets/js/modal.js` to populate `ndingi_js_token` from `data-contact-seed` only after real user interaction (`focusin`, `keydown`, `pointerdown`, or `touchstart`), verified server-side via `ndingi_contact_expected_js_token()`.
+  4. **Heuristic & content spam filter (`ndingi_is_spam_submission()`)**: Blocked URLs in `Name`/`Subject`, `> 1` URL in `Message`, high-risk spam/shortener/paste domains (`telegra.ph`, `t.me`, `bit.ly`, `tinyurl.com`, `.ru`, `.xyz`, `.top`, `.click`, etc.), ALL-CAPS shouting (`> 60%` uppercase across `>= 15` letters), single-word CamelCase bot names (`EdwardWaw`), financial/crypto/SEO scam lures (`earn $... per month`, etc.), and WordPress Disallowed Comment Keys, plus sanitized `Reply-To` headers against header injection.
+  5. **Per-IP & global rate limiting (`ndingi_contact_is_rate_limited()`)**: Enforced transient-backed caps of 2 submissions per 15 minutes per IP, 5 per 24 hours per IP, and a global circuit breaker of 15 contact emails per hour.
+  6. **Unique form DOM IDs**: Updated `template-parts/contact-form.php` to prefix input IDs with `wp_unique_id('contact-')` so the header Contact modal and `/contact/` page no longer duplicate HTML IDs.
+  7. **Host & staging SMTP hardening**: Rotated placeholder `wp-config.php` security keys/salts on `ndingifoundation.org` and enabled FluentSMTP `simulate_emails: "yes"` on staging `ndingi.ericgitonga.com`.
+- Bumped `VERSION`, theme `style.css`, and plugin `ndingi-wp-content.php` headers to `0.4.10`.
+
 ## 0.4.9 — 2026-10-29
 
 Add recovered Archbishop Ndingi portraits to **Who We Are** and standardize Trustee & Board of Management titles/names (#10, #11):
