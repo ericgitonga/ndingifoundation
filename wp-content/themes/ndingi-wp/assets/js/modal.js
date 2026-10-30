@@ -40,4 +40,23 @@
 			});
 		});
 	});
+
+	// Populate the contact form's anti-bot proof token only after real human
+	// interaction (focus, key press, or pointer/touch event) on the form.
+	document.querySelectorAll('form.contact-form[data-contact-seed]').forEach(function (form) {
+		var armed = false;
+		function armToken() {
+			if (armed) return;
+			var seed = form.getAttribute('data-contact-seed') || '';
+			var tsInput = form.querySelector('input[name="ndingi_ts"]');
+			var tokenInput = form.querySelector('input[name="ndingi_js_token"]');
+			if (!seed || !tsInput || !tokenInput) return;
+			var ts = tsInput.value || '';
+			tokenInput.value = seed.split('').reverse().join('') + '-' + ts.slice(-4);
+			armed = true;
+		}
+		['focusin', 'keydown', 'pointerdown', 'touchstart'].forEach(function (evt) {
+			form.addEventListener(evt, armToken, { passive: true });
+		});
+	});
 })();
