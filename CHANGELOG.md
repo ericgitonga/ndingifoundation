@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.11 — 2026-11-04
+
+Replace WordPress fallback favicon with Ndingi Foundation emblem in Google Search and browser tabs (#16):
+- Added `512×512` square emblem (`assets/images/icon.png`) and multi-size `favicon.ico` (`16×16`, `32×32`, `48×48`, `192×192`) to `wp-content/themes/ndingi-wp/assets/images/`.
+- Updated `header.php` with `<link rel="icon">` (`48x48`, `512x512`) and `<link rel="apple-touch-icon">` (`180x180`) tags.
+- Updated `functions.php` to filter `get_site_icon_url`, serve `/favicon.ico` directly via `do_faviconico` (preventing WordPress's 302 redirect to `w-logo-gray-white-bg.png`), and emit `Organization` + `WebSite` JSON-LD (`logo`, `image`) and `og:image` in `wp_head`.
+
 ## 0.4.10 — 2026-10-30
 
 Harden contact form against automated spam bots and protect Zoho SMTP sender reputation (#14):

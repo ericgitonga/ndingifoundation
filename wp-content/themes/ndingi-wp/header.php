@@ -3,6 +3,9 @@
 <head>
 	<meta charset="<?php bloginfo( 'charset' ); ?>" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<link rel="icon" href="<?php echo esc_url( get_theme_file_uri( '/assets/images/favicon.ico' ) ); ?>" sizes="48x48" type="image/x-icon" />
+	<link rel="icon" href="<?php echo esc_url( get_theme_file_uri( '/assets/images/icon.png' ) ); ?>" sizes="512x512" type="image/png" />
+	<link rel="apple-touch-icon" href="<?php echo esc_url( get_theme_file_uri( '/assets/images/icon.png' ) ); ?>" sizes="180x180" />
 	<?php wp_head(); ?>
 </head>
 <body <?php body_class(); ?>>
