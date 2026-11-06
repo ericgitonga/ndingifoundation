@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.12 — 2026-11-06
+
+Add **Fr. Antony Mwituria** back to the **Trustees** roster (#18):
+- Updated `ndingi_page_setup_run()` in `wp-content/plugins/ndingi-wp-content/includes/page-setup.php` (and synced live `ndingifoundation.org`) to assign **Fr. Antony Mwituria** to both the **Trustees** (`trustees`) and **Board of Management** (`board`) rosters, listing all three Trustees (**Archbishop Dominic Kimengich**, **James Nyiha**, and **Fr. Antony Mwituria**) on `/trustees/` and `/about/people/`.
+- Bumped `VERSION`, theme `style.css`, and plugin `ndingi-wp-content.php` headers to `0.4.12`.
+
 ## 0.4.11 — 2026-11-04
 
 Replace WordPress fallback favicon with Ndingi Foundation emblem in Google Search and browser tabs (#16):
