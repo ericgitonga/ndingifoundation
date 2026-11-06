@@ -393,10 +393,10 @@ function ndingi_page_setup_run() {
 		}
 	}
 
-	// Normalize Trustee & Board of Management titles/names per client feedback (2026-10-29):
+	// Normalize Trustee & Board of Management titles/names per client feedback:
 	// 1. "Bishop Dominic Kimengich" -> "Archbishop Dominic Kimengich"
 	// 2. "Mr. James Nyiha" -> "James Nyiha"
-	// 3. Keep "Fr. Antony Mwituria" exclusively on the Board of Management ('board') roster.
+	// 3. Ensure "Fr. Antony Mwituria" appears on both the Trustees ('trustees') and Board of Management ('board') rosters.
 	$member_renames = array(
 		'Bishop Dominic Kimengich' => 'Archbishop Dominic Kimengich',
 		'Mr. James Nyiha'          => 'James Nyiha',
@@ -416,7 +416,7 @@ function ndingi_page_setup_run() {
 
 	$fr_antony = ndingi_page_setup_find_by_title( 'Fr. Antony Mwituria', 'team_member' );
 	if ( $fr_antony ) {
-		wp_set_object_terms( $fr_antony->ID, array( 'board' ), 'ndingi_roster', false );
+		wp_set_object_terms( $fr_antony->ID, array( 'trustees', 'board' ), 'ndingi_roster', false );
 	}
 
 	return array(
