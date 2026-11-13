@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.13 — 2026-11-13
+
+Populate missing **Trustee** and **Board of Management** biographies from legacy WordPress database export (#20):
+- Updated `ndingi_page_setup_run()` in `wp-content/plugins/ndingi-wp-content/includes/page-setup.php` to idempotently backfill empty `team_member` `post_content` biographies for **Archbishop Dominic Kimengich**, **James Nyiha**, **Lawrence Omonyo**, **Arch. Peter Opon**, **Claire Wanjiru Mwangi**, **Francis Ngigi Njoroge**, and **Vivian Nyambura** from the legacy `wp1h_posts.csv` export (leaving all five existing biographies and any future `wp-admin` edits untouched).
+- Synced the seven biographies into the local WordPress preview database and verified modal rendering across `/trustees/`, `/board-of-management/`, and `/about/people/`.
+- Bumped `VERSION`, theme `style.css`, and plugin `ndingi-wp-content.php` headers to `0.4.13`.
+
 ## 0.4.12 — 2026-11-06
 
 Add **Fr. Antony Mwituria** back to the **Trustees** roster (#18):

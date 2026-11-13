@@ -419,6 +419,36 @@ function ndingi_page_setup_run() {
 		wp_set_object_terms( $fr_antony->ID, array( 'trustees', 'board' ), 'ndingi_roster', false );
 	}
 
+	// Idempotently backfill missing Trustee & Board of Management biographies
+	// recovered from the legacy WordPress database export (#20). Never overwrites
+	// any team_member post that already has biographical text in post_content.
+	$member_bios = array(
+		'Archbishop Dominic Kimengich' => "<p>Archbishop Dominic Kimengich is the current Bishop of Lodwar, Kenya. He was born in 1961 and ordained priest on the 14th of September 1986. He has served as a priest in the Diocese of Nakuru and was the rector at St. Joseph Junior Seminary, a Catholic secondary school for boys in Molo, Kenya. In 2001, he was appointed the Vicar General of the Diocese of Nakuru. From 2006 through 2008 he served as Rector of St. Matthias Mulumba Major Seminary in Tindinyo, overseeing the formation of 170 seminarians. He then served at the Kenya Catholic Secretariat in Nairobi, serving the entire Church in Kenya in canonical issues by offering legal/canonical advice to the bishops, clergy, laity and religious. Prior to his appointment as auxiliary bishop, he was Judge of the Diocesan Ecclesiastical Tribunal of Nakuru and responsible for sourcing money for the Canon Law Office and ensuring the establishment of functional tribunals in the country.</p>\n<p>On March 5, 2011 Pope Benedict XVI appointed him Bishop of the Diocese of Lodwar upon the retirement of Bishop Patrick Harrington. He was installed as Bishop on March 30, 2011 at the Cathedral in Lodwar.</p>",
+		'James Nyiha'                  => "<p>James Nyiha is an advocate of the High Court of Kenya admitted to the bar in 1993. He holds a Bachelor of Laws degree from the University of Nairobi with a postgraduate diploma from the Kenya School of Law. In 2009, he attended the prestigious Advanced Management Program organised by the Strathmore Business School together with IESE Business School (Spain) and Lagos Business School (Nigeria) and in 2010 he attended The Master Negotiator Programme organised by Strathmore Business School.</p>\n<p>Whilst at the University of Nairobi, James Nyiha received the Hamilton Harrison &amp; Matthews Award for the Best First Year Law Student and the prestigious Kaplan and Stratton Award for being the best overall student in the law degree programme for his class intake.</p>\n<p>He has special expertise in negotiations, alternative dispute resolution, securities services creation and their realisation, amalgamation and winding up of companies, loan recovery and drafting of commercial and residential leases. In litigation he handles various types of cases ranging from foreclosure suits for banks to disputes arising from contracts and arbitrations arising from building contracts.</p>\n<p>He also serves as the Chief Prosecutor at the Advocates Disciplinary Committee established under the Advocates Act where he prosecutes on behalf of the Law Society of Kenya and as a Public Prosecutor appointed as such by the Honourable Attorney General of Kenya for offences committed under the Advocates Act.</p>",
+		'Lawrence Omonyo'              => "<p>Lawrence Omonyo is a Consultant Quantity Surveyor and an arbitrator. He is the Managing Director of Laurez &amp; Associates and has over 10 years\u{2019} experience in Quantity Surveying. He holds Bachelor\u{2019}s Degrees in Building Economics (Quantity Surveying) and Law (LLB) from the University of Nairobi. He also holds a Post-graduate Diploma from Kenya School of Law. He is a member of the Chartered Institute of Arbitrators, London and Kenya Chapter. He is also a corporate member of the Architectural Association of Kenya (AAK) and Institute of Quantity Surveyors of Kenya (IQSK).</p>",
+		'Arch. Peter Opon'             => '<p>Architect Peter N. Opon has a track record of successful project management for architectural projects both at the public and private sector levels. His leadership qualities and contract management skills as the project architect for several projects undertaken by the firm have left Clients satisfied with the quality and speed of deliverance prompting them to award the firm subsequent architectural consultancies.</p>',
+		'Claire Wanjiru Mwangi'        => "<p>Ms. Claire Mwangi has over 18 years\u{2019} experience in the financial services sector, having worked with Toronto Dominion Bank in NY in project finance, Citibank NA in Kenya and Tanzania within Global Markets, and Stanbic Bank as Executive Director Corporate and Investment Bank, as well as Regional Director Global Markets, covering East Africa and Mauritius.</p>\n<p>She holds a Bachelor\u{2019}s degree from Amherst College, USA and an MBA from the Wharton School, University of Pennsylvania, USA. She is currently a non-executive Director on the boards of Heritage Insurance, CfC Life and Stanlib. She is also on the advisory Committee of 46 Parallels, a pan-African investment partnership. She runs Antennae Holdings, an Agribusiness firm, and is also a Director of Grove Limited.</p>",
+		'Francis Ngigi Njoroge'        => "<p>Francis is a graduate of KCA University, having obtained a Bachelor of Commerce in Finance. He is also a Certified Public Accountant and has developed a special interest in tax matters. He worked as an intern at Pacis Insurance Company Limited before joining the Archdiocese of Nairobi where he held various positions in the finance department.</p>\n<p>Francis has the distinction of being the first beneficiary of the Archbishop Ndingi Mwana\u{2019}a Nzeki Foundation and has set the bar very high for future beneficiaries. He has also since become one of the benefactors of the Foundation.</p>\n<p>The board is very proud to have him and is confident that his energy and new ideas will be a significant plus for the foundation.</p>",
+		'Vivian Nyambura'              => "<p>Vivian is one of three new board members recently appointed by the board to inject youthful energy and ideas.</p>\n<p>She is a graduate of Alliance Girls High School and is currently pursuing a Bachelor of Commerce Degree at Strathmore University. She is also working towards being a Certified Public Accountant. Vivian got some work experience in the finance department of the Archdiocese of Nairobi and at Crown Paints Kenya Plc.</p>\n<p>A key consideration in her appointment is her participation in extra-curricular activities and the many leadership positions she has held both in school and in her local community. The Board is confident to find in Vivian a positive contribution to the objectives of the Foundation.</p>",
+	);
+	foreach ( $member_bios as $member_name => $bio_html ) {
+		$member_post = ndingi_page_setup_find_by_title( $member_name, 'team_member' );
+		if ( ! $member_post ) {
+			continue;
+		}
+		if ( '' === trim( $member_post->post_content ) ) {
+			wp_update_post(
+				array(
+					'ID'           => $member_post->ID,
+					'post_content' => wp_slash( $bio_html ),
+				)
+			);
+			$created[] = "Bio: {$member_name}";
+		} else {
+			$existing[] = "Bio: {$member_name}";
+		}
+	}
+
 	return array(
 		'created'  => $created,
 		'existing' => $existing,
@@ -455,9 +485,9 @@ function ndingi_page_setup_render_admin_page() {
 		<p>
 			Creates every page this theme expects (About, Our Work, Resources, and all
 			their children) with the real Foundation copy and the correct template
-			assigned, plus the five Core Values entries. Safe to run more than once —
-			anything already found by title is left untouched, nothing is ever
-			overwritten or deleted.
+			assigned, plus the five Core Values entries and any missing Trustee / Board
+			of Management biographies. Safe to run more than once — anything already
+			populated is left untouched, nothing is ever overwritten or deleted.
 		</p>
 		<?php if ( $result ) : ?>
 			<div class="notice notice-success">
