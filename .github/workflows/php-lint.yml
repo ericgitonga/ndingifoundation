@@ -19,4 +19,8 @@ jobs:
       - name: Lint every PHP file
         run: |
           set -e
-          find wp-content -name '*.php' -print0 | xargs -0 -n1 php -l
+          find wp-content tests -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Run security & compliance unit tests
+        run: |
+          php tests/run_security_tests.php
