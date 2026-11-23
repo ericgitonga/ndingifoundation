@@ -12,6 +12,7 @@
 			<a href="mailto:<?php echo esc_attr( ndingi_contact_email() ); ?>">
 				<?php echo esc_html( ndingi_contact_email() ); ?>
 			</a>
+			<a href="#cookie-preferences" data-open-cookie-preferences>Cookie Preferences</a>
 			<p>&copy; <?php echo esc_html( gmdate( 'Y' ) ); ?> Ndingi Foundation. All rights reserved.</p>
 		</div>
 	</div>

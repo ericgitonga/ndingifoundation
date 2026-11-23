@@ -12,6 +12,9 @@ $grid_id = $args['grid_id'] ?? 'team-grid';
 ?>
 <div class="team-grid" id="<?php echo esc_attr( $grid_id ); ?>">
 	<?php foreach ( $members as $member ) :
+		if ( post_password_required( $member ) ) {
+			continue;
+		}
 		$role = get_post_meta( $member->ID, 'ndingi_role', true );
 		?>
 		<button type="button" class="team-card" data-card-trigger="<?php echo esc_attr( 'team-content-' . $member->ID ); ?>" aria-haspopup="dialog">
@@ -25,6 +28,9 @@ $grid_id = $args['grid_id'] ?? 'team-grid';
 </div>
 
 <?php foreach ( $members as $member ) :
+	if ( post_password_required( $member ) ) {
+		continue;
+	}
 	$role = get_post_meta( $member->ID, 'ndingi_role', true );
 	?>
 	<template id="team-content-<?php echo esc_attr( $member->ID ); ?>">

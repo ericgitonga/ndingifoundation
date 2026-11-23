@@ -138,7 +138,7 @@ function ndingi_get_professional_advisors( $post_id = 0 ) {
 	$posts = get_posts(
 		array(
 			'post_type'      => 'partner',
-			'posts_per_page' => -1,
+			'posts_per_page' => 100,
 			'orderby'        => 'menu_order',
 			'order'          => 'ASC',
 		)
@@ -217,7 +217,7 @@ function ndingi_get_donor_partners( $post_id = 0 ) {
 	$posts = get_posts(
 		array(
 			'post_type'      => 'partner',
-			'posts_per_page' => -1,
+			'posts_per_page' => 100,
 			'orderby'        => 'menu_order',
 			'order'          => 'ASC',
 			'tax_query'      => array(
