@@ -20,6 +20,9 @@ $children = ndingi_safe_get_child_pages( get_the_ID() );
 
 	<div class="card-grid card-grid--3" id="who-we-are-grid" style="margin-top:2.5rem;">
 		<?php foreach ( $children as $child ) :
+			if ( post_password_required( $child ) ) {
+				continue;
+			}
 			$icon  = get_post_meta( $child->ID, 'ndingi_card_icon', true );
 			$blurb = get_post_meta( $child->ID, 'ndingi_card_blurb', true );
 			ndingi_modal_card( $child->post_name, $child->post_title, $blurb, $icon );
@@ -27,6 +30,9 @@ $children = ndingi_safe_get_child_pages( get_the_ID() );
 	</div>
 
 	<?php foreach ( $children as $child ) :
+		if ( post_password_required( $child ) ) {
+			continue;
+		}
 		if ( 'core-values' === $child->post_name ) {
 			ob_start();
 			foreach ( ndingi_safe_get_core_values() as $value ) {

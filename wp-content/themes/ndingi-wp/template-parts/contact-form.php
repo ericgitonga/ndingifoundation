@@ -46,13 +46,31 @@ $ndingi_sig            = function_exists( 'ndingi_contact_sign_token' )
 			<textarea id="<?php echo esc_attr( $ndingi_form_uid . '-message' ); ?>" name="message" rows="5" maxlength="5000" required></textarea>
 		</div>
 
+		<div class="field field--checkbox" style="display:flex;align-items:flex-start;gap:0.5rem;font-size:0.875rem;margin-top:0.75rem;">
+			<input id="<?php echo esc_attr( $ndingi_form_uid . '-dpa-consent' ); ?>" type="checkbox" name="dpa_consent" value="1" required style="margin-top:0.25rem;" />
+			<label for="<?php echo esc_attr( $ndingi_form_uid . '-dpa-consent' ); ?>" style="font-weight:normal;color:var(--fg-80);line-height:1.4;">
+				I consent to the Archbishop Ndingi Mwana a'Nzeki Foundation processing my details in accordance with the Kenya Data Protection Act, 2019 solely to respond to this inquiry.
+			</label>
+		</div>
+		<p style="font-size:0.75rem;color:var(--fg-60);margin-top:0.25rem;line-height:1.3;">
+			We respect your privacy. Inquiries are stored securely and never disclosed to third parties without consent.
+		</p>
+
 		<div class="contact-form__aux" aria-hidden="true">
 			<label for="<?php echo esc_attr( $ndingi_form_uid . '-website' ); ?>">Website</label>
 			<input id="<?php echo esc_attr( $ndingi_form_uid . '-website' ); ?>" type="text" name="website" value="" tabindex="-1" autocomplete="nope" />
 			<input class="form-honeypot" type="checkbox" name="botcheck" value="1" tabindex="-1" autocomplete="off" />
 		</div>
 
-		<?php if ( 'error' === $ndingi_contact_status ) : ?>
+		<?php if ( 'expired' === $ndingi_contact_status ) : ?>
+			<p class="form-message form-message--error">
+				Your session expired. Please submit the form again to send your message.
+			</p>
+		<?php elseif ( 'consent_required' === $ndingi_contact_status ) : ?>
+			<p class="form-message form-message--error">
+				Please check the privacy consent box before sending your message.
+			</p>
+		<?php elseif ( 'error' === $ndingi_contact_status ) : ?>
 			<p class="form-message form-message--error">
 				Something went wrong sending your message &mdash; please email
 				<a href="mailto:<?php echo esc_attr( ndingi_contact_email() ); ?>"><?php echo esc_html( ndingi_contact_email() ); ?></a>

@@ -88,12 +88,26 @@ add_action( 'save_post_page', 'ndingi_save_page_card' );
  * @return WP_Post[]
  */
 function ndingi_get_child_pages( $parent_id ) {
-	return get_pages(
+	$pages = get_pages(
 		array(
 			'child_of'    => $parent_id,
 			'parent'      => $parent_id,
 			'sort_column' => 'menu_order',
 			'sort_order'  => 'ASC',
+		)
+	);
+
+	if ( empty( $pages ) ) {
+		return array();
+	}
+
+	// Exclude password-protected child pages from anonymous public cards
+	return array_values(
+		array_filter(
+			$pages,
+			function ( $p ) {
+				return ! post_password_required( $p );
+			}
 		)
 	);
 }

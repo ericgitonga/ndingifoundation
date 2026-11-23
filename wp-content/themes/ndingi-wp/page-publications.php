@@ -12,7 +12,7 @@ get_header();
 $resources = get_posts(
 	array(
 		'post_type'      => 'publication',
-		'posts_per_page' => -1,
+		'posts_per_page' => 100,
 		'orderby'        => 'date',
 		'order'          => 'DESC',
 	)

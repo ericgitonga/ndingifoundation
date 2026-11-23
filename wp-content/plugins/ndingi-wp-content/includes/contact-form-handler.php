@@ -110,28 +110,72 @@ function ndingi_is_spam_submission( $name, $email, $subject, $message ) {
 }
 
 /**
- * Enforce per-IP (max 2 / 15 min, max 5 / 24 hr) and global (max 15 / hr)
- * rate limits via WordPress transients. Returns true if rate-limited.
+ * Atomically reserve a single-use signature replay lock via WordPress options.
+ * Returns true if the lock was acquired, false if replayed.
  */
-function ndingi_contact_is_rate_limited( $ip ) {
-	$ip_hash   = substr( hash_hmac( 'sha256', (string) $ip, wp_salt( 'nonce' ) ), 0, 16 );
-	$key_15m   = 'ndingi_cf_15m_' . $ip_hash;
-	$key_24h   = 'ndingi_cf_24h_' . $ip_hash;
-	$key_glob  = 'ndingi_cf_glob_1h';
+function ndingi_contact_acquire_replay_lock( $sig ) {
+	$replay_key       = 'ndingi_cf_sig_' . substr( $sig, 0, 24 );
+	$transient_option = '_transient_' . $replay_key;
+	$timeout_option   = '_transient_timeout_' . $replay_key;
+	$expires_at       = time() + ( 2 * HOUR_IN_SECONDS );
 
-	$count_15m  = (int) get_transient( $key_15m );
-	$count_24h  = (int) get_transient( $key_24h );
-	$count_glob = (int) get_transient( $key_glob );
+	// add_option() fails (returns false) if the option already exists (atomic check-and-set).
+	if ( ! add_option( $transient_option, 1, '', 'no' ) ) {
+		return false;
+	}
+	add_option( $timeout_option, $expires_at, '', 'no' );
+	return true;
+}
 
-	if ( $count_15m >= 2 || $count_24h >= 5 || $count_glob >= 15 ) {
-		return true;
+/**
+ * Atomically increment a transient counter using SQL queries against wp_options.
+ * Returns true if count <= limit, false if limit exceeded.
+ */
+function ndingi_contact_atomic_increment( $key, $expiration_seconds, $limit ) {
+	global $wpdb;
+	$transient_option = '_transient_' . $key;
+	$timeout_option   = '_transient_timeout_' . $key;
+	$now              = time();
+	$expires_at       = $now + $expiration_seconds;
+
+	if ( add_option( $transient_option, 1, '', 'no' ) ) {
+		add_option( $timeout_option, $expires_at, '', 'no' );
+		return 1 <= $limit;
 	}
 
-	set_transient( $key_15m, $count_15m + 1, 15 * MINUTE_IN_SECONDS );
-	set_transient( $key_24h, $count_24h + 1, DAY_IN_SECONDS );
-	set_transient( $key_glob, $count_glob + 1, HOUR_IN_SECONDS );
+	$timeout = (int) get_option( $timeout_option );
+	if ( $timeout && $timeout < $now ) {
+		update_option( $transient_option, 1, 'no' );
+		update_option( $timeout_option, $expires_at, 'no' );
+		return 1 <= $limit;
+	}
 
-	return false;
+	$wpdb->query(
+		$wpdb->prepare(
+			"UPDATE {$wpdb->options} SET option_value = option_value + 1 WHERE option_name = %s",
+			$transient_option
+		)
+	);
+	$current = (int) $wpdb->get_var(
+		$wpdb->prepare(
+			"SELECT option_value FROM {$wpdb->options} WHERE option_name = %s",
+			$transient_option
+		)
+	);
+	return $current <= $limit;
+}
+
+/**
+ * Enforce per-IP (max 2 / 15 min, max 5 / 24 hr) and global (max 15 / hr)
+ * rate limits atomically via WordPress options. Returns true if rate-limited.
+ */
+function ndingi_contact_is_rate_limited( $ip ) {
+	$ip_hash = substr( hash_hmac( 'sha256', (string) $ip, wp_salt( 'nonce' ) ), 0, 16 );
+	$ok_15m  = ndingi_contact_atomic_increment( 'ndingi_cf_15m_' . $ip_hash, 15 * MINUTE_IN_SECONDS, 2 );
+	$ok_24h  = ndingi_contact_atomic_increment( 'ndingi_cf_24h_' . $ip_hash, DAY_IN_SECONDS, 5 );
+	$ok_glob = ndingi_contact_atomic_increment( 'ndingi_cf_glob_1h', HOUR_IN_SECONDS, 15 );
+
+	return ( ! $ok_15m || ! $ok_24h || ! $ok_glob );
 }
 
 function ndingi_handle_contact_submission() {
@@ -152,7 +196,7 @@ function ndingi_handle_contact_submission() {
 	}
 
 	// Layer 2 — Signed timestamp time-trap (4s minimum fill time, 2h max age)
-	// and single-use signature replay lock.
+	// and atomic single-use signature replay lock.
 	$ts   = isset( $_POST['ndingi_ts'] ) ? sanitize_text_field( wp_unslash( $_POST['ndingi_ts'] ) ) : '';
 	$seed = isset( $_POST['ndingi_seed'] ) ? sanitize_text_field( wp_unslash( $_POST['ndingi_seed'] ) ) : '';
 	$sig  = isset( $_POST['ndingi_sig'] ) ? sanitize_text_field( wp_unslash( $_POST['ndingi_sig'] ) ) : '';
@@ -169,23 +213,34 @@ function ndingi_handle_contact_submission() {
 	}
 
 	$elapsed = time() - (int) $ts;
-	if ( $elapsed < 4 || $elapsed > 7200 ) {
+	if ( $elapsed < 4 ) {
+		// Too fast: bot behaviour -> silent drop
 		wp_safe_redirect( add_query_arg( 'ndingi_contact', 'success', $redirect_to ) );
+		exit;
+	}
+	if ( $elapsed > 7200 ) {
+		// Expired session (> 2h): recoverable error for legitimate visitor
+		wp_safe_redirect( add_query_arg( 'ndingi_contact', 'expired', $redirect_to ) );
 		exit;
 	}
 
-	$replay_key = 'ndingi_cf_sig_' . substr( $sig, 0, 24 );
-	if ( get_transient( $replay_key ) ) {
+	// Atomic replay lock acquisition
+	if ( ! ndingi_contact_acquire_replay_lock( $sig ) ) {
 		wp_safe_redirect( add_query_arg( 'ndingi_contact', 'success', $redirect_to ) );
 		exit;
 	}
-	set_transient( $replay_key, 1, 2 * HOUR_IN_SECONDS );
 
 	// Layer 3 — Client-side human interaction proof token (set by modal.js).
 	$js_token          = isset( $_POST['ndingi_js_token'] ) ? sanitize_text_field( wp_unslash( $_POST['ndingi_js_token'] ) ) : '';
 	$expected_js_token = ndingi_contact_expected_js_token( $ts, $seed );
 	if ( ! $js_token || ! hash_equals( $expected_js_token, $js_token ) ) {
 		wp_safe_redirect( add_query_arg( 'ndingi_contact', 'success', $redirect_to ) );
+		exit;
+	}
+
+	// Kenya DPA 2019 Section 29 — Required informed consent check
+	if ( empty( $_POST['dpa_consent'] ) ) {
+		wp_safe_redirect( add_query_arg( 'ndingi_contact', 'consent_required', $redirect_to ) );
 		exit;
 	}
 
@@ -205,7 +260,7 @@ function ndingi_handle_contact_submission() {
 		exit;
 	}
 
-	// Layer 5 — Per-IP and global rate limiting.
+	// Layer 5 — Atomic per-IP and global rate limiting.
 	if ( ndingi_contact_is_rate_limited( ndingi_contact_client_ip() ) ) {
 		wp_safe_redirect( add_query_arg( 'ndingi_contact', 'success', $redirect_to ) );
 		exit;
@@ -213,7 +268,9 @@ function ndingi_handle_contact_submission() {
 
 	$to = function_exists( 'ndingi_contact_email' ) ? ndingi_contact_email() : '';
 	if ( ! $to || ! is_email( $to ) ) {
-		$to = get_option( 'admin_email' );
+		error_log( '[Ndingi Contact Form] Error: No valid recipient email configured via ndingi_contact_email().' );
+		wp_safe_redirect( add_query_arg( 'ndingi_contact', 'error', $redirect_to ) );
+		exit;
 	}
 
 	$safe_reply_name = trim( preg_replace( '/[\r\n<>",;]+/', ' ', $name ) ) ?: 'Website Visitor';

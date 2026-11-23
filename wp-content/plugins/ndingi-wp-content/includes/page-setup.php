@@ -436,6 +436,11 @@ function ndingi_page_setup_run() {
 		if ( ! $member_post ) {
 			continue;
 		}
+		// Respect intentional takedown / erasure requests (DPA 2019 Section 40)
+		if ( get_post_meta( $member_post->ID, '_ndingi_bio_suppressed', true ) ) {
+			$existing[] = "Bio (Suppressed): {$member_name}";
+			continue;
+		}
 		if ( '' === trim( $member_post->post_content ) ) {
 			wp_update_post(
 				array(

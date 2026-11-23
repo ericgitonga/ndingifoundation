@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 get_header();
 
-$posts = get_posts( array( 'posts_per_page' => -1, 'orderby' => 'date', 'order' => 'DESC' ) );
+$posts = get_posts( array( 'posts_per_page' => 100, 'orderby' => 'date', 'order' => 'DESC' ) );
 ?>
 <div class="wrap">
 	<?php ndingi_breadcrumb( array( array( 'label' => 'Resources', 'href' => home_url( '/resources/' ) ), array( 'label' => 'News' ) ) ); ?>

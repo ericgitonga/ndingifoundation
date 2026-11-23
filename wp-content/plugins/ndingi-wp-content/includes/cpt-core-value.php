@@ -43,7 +43,7 @@ function ndingi_get_core_values() {
 	return get_posts(
 		array(
 			'post_type'      => 'core_value',
-			'posts_per_page' => -1,
+			'posts_per_page' => 100,
 			'orderby'        => 'menu_order',
 			'order'          => 'ASC',
 		)

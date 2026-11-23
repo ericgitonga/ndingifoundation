@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.14 — 2026-11-23
+
+Remediate security, privacy, and query hardening findings from the 2026-11-23 Codex Adversarial & Kenya DPA 2019 Audit (#22):
+- **Access Control & Password Protection (#23)**: Guarded password-protected child pages and team members against information leakage in grid cards and modal dialogs across `page-our-work.php`, `page-who-we-are.php`, `template-parts/team-grid.php`, and `page-card-meta.php` using `post_password_required()`.
+- **Atomic Anti-Spam Replay & Rate Limiting (#24)**: Replaced race-prone transient get/set with an atomic database option replay lock (`ndingi_contact_acquire_replay_lock()`) and atomic SQL counter increment (`ndingi_contact_atomic_increment()`) in `contact-form-handler.php`.
+- **Kenya Data Protection Act 2019 Section 29 Compliance (#25)**: Added mandatory statutory consent checkbox and data processing transparency notice to `template-parts/contact-form.php`, verified and enforced server-side before processing contact submissions.
+- **Session Expiry & Diagnostic Transparency (#26)**: Added dedicated `expired` and `consent_required` error handling and user alerts to contact form redirects, distinguishing between expired legitimate browsing sessions (> 2 hours) and silent honeypot bot drops, and eliminated fallback email exposure for invalid recipients.
+- **DPA Right to Erasure Protection (#27)**: Added `_ndingi_bio_suppressed` metadata check in `ndingi_page_setup_run()` to ensure biography restoration routines respect past deletions and cannot overwrite erased or suppressed profiles.
+- **Payment Destination RBAC (#28)**: Restricted M-Pesa Paybill number/account and bank account/branch/SWIFT fields in `donate-meta.php` to users with `manage_options` (administrator) capabilities, rendering inputs read-only for standard page editors and rejecting unauthorized modifications.
+- **Cookie Consent Versioning & Reset (#29)**: Introduced versioned consent state (`v1`) with timestamp tracking in `cookie-consent.js` and `cookie-consent.php`, and added an accessible "Cookie Preferences" reset link to `footer.php`.
+- **Archive & CPT Query Bounding (#30)**: Replaced unbounded queries (`posts_per_page => -1`) with bounded pagination limits (`posts_per_page => 100`) across `page-news.php`, `page-publications.php`, `cpt-team-member.php`, `cpt-partner.php`, and `cpt-core-value.php` to prevent memory exhaustion.
+
 ## 0.4.13 — 2026-11-13
 
 Populate missing **Trustee** and **Board of Management** biographies from legacy WordPress database export (#20):

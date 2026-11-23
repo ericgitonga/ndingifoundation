@@ -134,7 +134,7 @@ function ndingi_get_roster( $roster_slug ) {
 	return get_posts(
 		array(
 			'post_type'      => 'team_member',
-			'posts_per_page' => -1,
+			'posts_per_page' => 100,
 			'orderby'        => 'menu_order',
 			'order'          => 'ASC',
 			'tax_query'      => array(

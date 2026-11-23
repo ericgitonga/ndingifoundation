@@ -15,12 +15,21 @@
 	</div>
 </div>
 <script>
-	// Unhide only when JS confirms no stored decision yet — avoids a flash
+	// Unhide only when JS confirms no stored decision yet or version mismatch — avoids a flash
 	// of the banner for a returning visitor who already chose (matches the
 	// original's useSyncExternalStore-driven conditional render).
 	(function () {
 		try {
-			if (!localStorage.getItem('ndingi-cookie-consent')) {
+			var raw = localStorage.getItem('ndingi-cookie-consent');
+			if (!raw) {
+				document.currentScript.previousElementSibling.hidden = false;
+				return;
+			}
+			if (raw === 'accepted' || raw === 'rejected') {
+				return;
+			}
+			var parsed = JSON.parse(raw);
+			if (!parsed || parsed.version !== 'v1') {
 				document.currentScript.previousElementSibling.hidden = false;
 			}
 		} catch (e) {
