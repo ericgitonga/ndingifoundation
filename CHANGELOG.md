@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.15 — 2026-11-23
+
+Remediate Application Security findings from the 2026-11-23 Codex Adversarial Audit (#32):
+- **Site Repair Concurrency & Batch Transaction Safety (#33)**: Wrapped \`ndingi_page_setup_run()\` in an exclusive mutual-exclusion concurrency lock (\`ndingi_page_setup_acquire_lock()\` / \`ndingi_page_setup_release_lock()\`), isolated batch database operations in \`wpdb\` transaction boundaries (\`START TRANSACTION\` / \`COMMIT\` / \`ROLLBACK\`), validated post insertions and write outcomes, and added idempotent execution progress markers.
+- **Automated Security Unit Test Suite & CI Gate (#34)**: Created comprehensive pure-logic unit test suite under \`tests/\` (\`test_security.php\`, \`run_security_tests.php\`, and \`bootstrap.php\`) covering password-protected content suppression, atomic replay locking, rate-limit monotonicity, DPA Section 29 consent enforcement, time-trap boundaries, right-to-erasure biography suppression, donation destination RBAC, and repair concurrency locking; expanded \`.github/workflows/php-lint.yml\` to gate every PR and push on automated security test execution alongside full syntax linting.
+
 ## 0.4.14 — 2026-11-23
 
 Remediate security, privacy, and query hardening findings from the 2026-11-23 Codex Adversarial & Kenya DPA 2019 Audit (#22):

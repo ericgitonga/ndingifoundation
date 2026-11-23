@@ -18,6 +18,33 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Attempt to acquire an exclusive lock for running site page setup/repair.
+ * Locks expire automatically after 120 seconds to prevent deadlocks.
+ *
+ * @return bool True if lock acquired, false if another process is running.
+ */
+function ndingi_page_setup_acquire_lock() {
+	$lock_key = 'ndingi_page_setup_lock';
+	$now      = time();
+	$timeout  = 120; // 2 minutes
+
+	$existing = get_option( $lock_key );
+	if ( $existing && ( $now - (int) $existing ) < $timeout ) {
+		return false;
+	}
+
+	update_option( $lock_key, $now );
+	return true;
+}
+
+/**
+ * Release the page setup lock.
+ */
+function ndingi_page_setup_release_lock() {
+	delete_option( 'ndingi_page_setup_lock' );
+}
+
 function ndingi_page_setup_find_by_title( $title, $post_type ) {
 	$query = new WP_Query(
 		array(
@@ -46,8 +73,13 @@ function ndingi_page_setup_create_page( $title, $content, $parent_id = 0, $templ
 			'post_content' => $content,
 			'post_status'  => 'publish',
 			'post_parent'  => $parent_id,
-		)
+		),
+		true
 	);
+
+	if ( is_wp_error( $page_id ) || ! $page_id ) {
+		return array( 0, false );
+	}
 
 	if ( $template ) {
 		update_post_meta( $page_id, '_wp_page_template', $template );
@@ -129,31 +161,49 @@ function ndingi_page_setup_founder_gallery_html( $parent_id = 0 ) {
  * @return array{created: string[], existing: string[]}
  */
 function ndingi_page_setup_run() {
-	$created  = array();
-	$existing = array();
-	$note     = function ( $title, $was_created ) use ( &$created, &$existing ) {
-		if ( $was_created ) {
-			$created[] = $title;
-		} else {
-			$existing[] = $title;
-		}
-	};
-
-	list( $home_id, $c ) = ndingi_page_setup_create_page(
-		'Home',
-		'',
-		0,
-		'',
-		array(
-			'ndingi_hero_heading'  => 'Empowering Communities Through Lasting Impact',
-			'ndingi_intro_heading' => "Upholding Archbishop Ndingi\u{2019}s Vision",
-		)
-	);
-	$note( 'Home', $c );
-	if ( 'page' !== get_option( 'show_on_front' ) || (int) get_option( 'page_on_front' ) !== $home_id ) {
-		update_option( 'show_on_front', 'page' );
-		update_option( 'page_on_front', $home_id );
+	if ( ! ndingi_page_setup_acquire_lock() ) {
+		return array(
+			'created'  => array(),
+			'existing' => array(),
+			'error'    => 'A site setup/repair operation is currently in progress. Please wait a moment and try again.',
+		);
 	}
+
+	global $wpdb;
+	$in_transaction = false;
+	if ( isset( $wpdb ) && is_object( $wpdb ) && method_exists( $wpdb, 'query' ) ) {
+		$wpdb->query( 'START TRANSACTION' );
+		$in_transaction = true;
+	}
+
+	try {
+		$created  = array();
+		$existing = array();
+		$note     = function ( $title, $was_created ) use ( &$created, &$existing ) {
+			if ( $was_created ) {
+				$created[] = $title;
+			} else {
+				$existing[] = $title;
+			}
+		};
+
+		list( $home_id, $c ) = ndingi_page_setup_create_page(
+			'Home',
+			'',
+			0,
+			'',
+			array(
+				'ndingi_hero_heading'  => 'Empowering Communities Through Lasting Impact',
+				'ndingi_intro_heading' => "Upholding Archbishop Ndingi\u{2019}s Vision",
+			)
+		);
+		$note( 'Home', $c );
+		if ( $home_id && ! is_wp_error( $home_id ) && get_post( $home_id ) ) {
+			if ( 'page' !== get_option( 'show_on_front' ) || (int) get_option( 'page_on_front' ) !== (int) $home_id ) {
+				update_option( 'show_on_front', 'page' );
+				update_option( 'page_on_front', (int) $home_id );
+			}
+		}
 
 	list( $about_id, $c ) = ndingi_page_setup_create_page( 'About', '', 0, 'page-about.php' );
 	$note( 'About', $c );
@@ -454,10 +504,34 @@ function ndingi_page_setup_run() {
 		}
 	}
 
-	return array(
-		'created'  => $created,
-		'existing' => $existing,
-	);
+		if ( $in_transaction ) {
+			$wpdb->query( 'COMMIT' );
+		}
+		ndingi_page_setup_release_lock();
+
+		update_option( 'ndingi_page_setup_last_run', array(
+			'timestamp' => time(),
+			'status'    => 'success',
+			'created'   => count( $created ),
+			'existing'  => count( $existing ),
+		) );
+
+		return array(
+			'created'  => $created,
+			'existing' => $existing,
+		);
+	} catch ( \Throwable $e ) {
+		if ( $in_transaction ) {
+			$wpdb->query( 'ROLLBACK' );
+		}
+		ndingi_page_setup_release_lock();
+
+		return array(
+			'created'  => array(),
+			'existing' => array(),
+			'error'    => 'Page setup encountered an unexpected error: ' . $e->getMessage(),
+		);
+	}
 }
 
 function ndingi_page_setup_admin_menu() {
@@ -495,14 +569,20 @@ function ndingi_page_setup_render_admin_page() {
 			populated is left untouched, nothing is ever overwritten or deleted.
 		</p>
 		<?php if ( $result ) : ?>
-			<div class="notice notice-success">
-				<p><strong>Created (<?php echo count( $result['created'] ); ?>):</strong>
-					<?php echo $result['created'] ? esc_html( implode( ', ', $result['created'] ) ) : '<em>none — everything already existed</em>'; ?>
-				</p>
-				<p><strong>Already existed, left alone (<?php echo count( $result['existing'] ); ?>):</strong>
-					<?php echo $result['existing'] ? esc_html( implode( ', ', $result['existing'] ) ) : '<em>none</em>'; ?>
-				</p>
-			</div>
+			<?php if ( ! empty( $result['error'] ) ) : ?>
+				<div class="notice notice-error">
+					<p><strong>Setup Failed:</strong> <?php echo esc_html( $result['error'] ); ?></p>
+				</div>
+			<?php else : ?>
+				<div class="notice notice-success">
+					<p><strong>Created (<?php echo count( $result['created'] ); ?>):</strong>
+						<?php echo $result['created'] ? esc_html( implode( ', ', $result['created'] ) ) : '<em>none — everything already existed</em>'; ?>
+					</p>
+					<p><strong>Already existed, left alone (<?php echo count( $result['existing'] ); ?>):</strong>
+						<?php echo $result['existing'] ? esc_html( implode( ', ', $result['existing'] ) ) : '<em>none</em>'; ?>
+					</p>
+				</div>
+			<?php endif; ?>
 		<?php endif; ?>
 		<form method="post">
 			<?php wp_nonce_field( 'ndingi_page_setup' ); ?>
